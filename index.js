@@ -7,14 +7,8 @@ import { promises as fs } from "fs";
 import { getAudioBuffer } from 'simple-tts-mp3';
 import translate from '@iamtraction/google-translate';
 import OpenAI from "openai";
+import {generateHealthResponse} from './api.js'
 dotenv.config();
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  defaultHeaders:{
-   "OpenAI-Beta": "assistants=v1"
-  }
-});
 
 const readJsonTranscriptStatic = {
   "metadata": {
@@ -155,27 +149,8 @@ app.post("/chat", async (req, res) => {
 
   const langToEng = await translate(question, { to: 'en', raw: false });
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo-16k",
-    messages: [
-      {
-        role: "system",
-        content: `
-        "You're a doctor's nurse and you're confident about it"
-        "Answer the health related query in simple language within 1-2 sentences."
-        "ask only 3-4 genral questions about sypmtoms and note the symptoms dont answer them and say doctor will contact you to treat you at your registered number"
-        "and this is important dont say patient to contact doctor say doctor will contact you at your registered number"
-        "and this is important dont say patient to contact doctor say doctor will contact you at your registered number"
-        "and this is important dont say patient to contact doctor say doctor will contact you at your registered number"
-        `,  
-      },
-      {
-        role: "user",
-        content: langToEng.text || "Hello",
-      },
-    ],
-  });
-  let GPT3Answer = completion.choices[0].message.content
+  
+  let GPT3Answer = await generateHealthResponse(langToEng.text||"hello")
 
   // eng to input lang translation
   const engToLang = await translate(GPT3Answer, { from: 'en', to: lang });
